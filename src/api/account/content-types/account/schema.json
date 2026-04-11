@@ -53,12 +53,6 @@
       "relation": "manyToOne",
       "target": "api::account-manager.account-manager"
     },
-    "users": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "plugin::users-permissions.user",
-      "mappedBy": "account"
-    },
     "permission_codes": {
       "type": "relation",
       "relation": "manyToMany",

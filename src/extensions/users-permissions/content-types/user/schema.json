@@ -102,8 +102,7 @@
     "account": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "api::account.account",
-      "inversedBy": "users"
+      "target": "api::account.account"
     }
   }
 }
