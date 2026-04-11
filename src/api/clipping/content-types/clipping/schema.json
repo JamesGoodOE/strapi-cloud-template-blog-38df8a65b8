@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "clippings",
+  "info": {
+    "singularName": "clipping",
+    "pluralName": "clippings",
+    "displayName": "Clipping",
+    "description": "User-saved sections from reports"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "section_anchor": {
+      "type": "string",
+      "required": true
+    },
+    "section_title": {
+      "type": "string",
+      "required": true
+    },
+    "section_html": {
+      "type": "richtext",
+      "required": true
+    },
+    "sort_order": {
+      "type": "integer",
+      "default": 0
+    },
+    "report": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::report.report"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}

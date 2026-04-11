@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "custom_reports",
+  "info": {
+    "singularName": "custom-report",
+    "pluralName": "custom-reports",
+    "displayName": "Custom Report",
+    "description": "User-compiled reports assembled from clippings"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "is_shared": {
+      "type": "boolean",
+      "default": false
+    },
+    "org_id": {
+      "type": "string"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "clippings": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::clipping.clipping"
+    }
+  }
+}

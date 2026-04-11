@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "content_type_tags",
+  "info": {
+    "singularName": "content-type-tag",
+    "pluralName": "content-type-tags",
+    "displayName": "Content Type",
+    "description": "Content format classification (Research Briefings, Chartbooks, etc.)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "parent": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::content-type-tag.content-type-tag",
+      "inversedBy": "children"
+    },
+    "children": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::content-type-tag.content-type-tag",
+      "mappedBy": "parent"
+    },
+    "reports": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::report.report",
+      "mappedBy": "content_types"
+    }
+  }
+}

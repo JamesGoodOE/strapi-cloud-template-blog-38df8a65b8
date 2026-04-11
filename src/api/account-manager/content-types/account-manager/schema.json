@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "account_managers",
+  "info": {
+    "singularName": "account-manager",
+    "pluralName": "account-managers",
+    "displayName": "Account Manager",
+    "description": "Dedicated account managers assigned to subscribers"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "title": {
+      "type": "string"
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "photo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "analysts",
+  "info": {
+    "singularName": "analyst",
+    "pluralName": "analysts",
+    "displayName": "Analyst",
+    "description": "Oxford Economics analysts / report authors"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email"
+    },
+    "title": {
+      "type": "string"
+    },
+    "photo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "reports": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::report.report",
+      "mappedBy": "analysts"
+    }
+  }
+}

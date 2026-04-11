@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "permission_codes",
+  "info": {
+    "singularName": "permission-code",
+    "pluralName": "permission-codes",
+    "displayName": "Permission Code",
+    "description": "Access control codes that gate report visibility"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "label": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "reports": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::report.report",
+      "mappedBy": "permission_codes"
+    },
+    "users": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "permission_codes"
+    }
+  }
+}
