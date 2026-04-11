@@ -64,6 +64,11 @@
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::key-theme.key-theme"
+    },
+    "reports": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::report.report"
     }
   }
 }

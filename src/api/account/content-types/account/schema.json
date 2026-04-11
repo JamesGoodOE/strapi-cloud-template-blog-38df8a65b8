@@ -1,0 +1,68 @@
+{
+  "kind": "collectionType",
+  "collectionName": "accounts",
+  "info": {
+    "singularName": "account",
+    "pluralName": "accounts",
+    "displayName": "Account",
+    "description": "Client organisations (companies) that subscribe to Oxford Economics"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "domain": {
+      "type": "string"
+    },
+    "external_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["active", "suspended", "churned"],
+      "default": "active",
+      "required": true
+    },
+    "notes": {
+      "type": "text"
+    },
+    "parent_account": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::account.account",
+      "inversedBy": "child_accounts"
+    },
+    "child_accounts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::account.account",
+      "mappedBy": "parent_account"
+    },
+    "account_manager": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::account-manager.account-manager"
+    },
+    "users": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "account"
+    },
+    "permission_codes": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::permission-code.permission-code"
+    }
+  }
+}
