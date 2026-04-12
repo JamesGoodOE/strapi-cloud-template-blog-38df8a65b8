@@ -14,7 +14,6 @@ module.exports = [
   'strapi::poweredBy',
   'strapi::query',
   'strapi::body',
-  'global::magic-auth',
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
