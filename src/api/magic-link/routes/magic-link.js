@@ -1,5 +1,9 @@
 'use strict';
 
-const { createCoreRouter } = require('@strapi/strapi').factories;
-
-module.exports = createCoreRouter('api::magic-link.magic-link');
+/**
+ * No core CRUD routes — magic links are only accessed via
+ * the custom request-link and verify endpoints.
+ */
+module.exports = {
+  routes: [],
+};
