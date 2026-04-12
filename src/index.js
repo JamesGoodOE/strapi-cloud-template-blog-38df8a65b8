@@ -14,8 +14,10 @@ setInterval(() => {
 
 module.exports = {
   register({ strapi }) {
-    // Add koa middleware directly for magic-auth endpoints
-    strapi.server.use(async (ctx, next) => {
+    // Add koa middleware directly for magic-auth endpoints.
+    // Use strapi.server.app (raw koa app) to prepend before router.
+    const app = strapi.server.app || strapi.server;
+    app.use(async (ctx, next) => {
       if (ctx.path === '/api/magic-auth/request-link' && ctx.method === 'POST') {
         await handleRequestLink(ctx, strapi);
         return;
