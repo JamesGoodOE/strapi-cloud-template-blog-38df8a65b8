@@ -47,6 +47,13 @@ module.exports = async ({ strapi }) => {
     await setRolePermissions(strapi, subRole.id, buildSubscriberPermissions());
     strapi.log.info('Applied oe_subscriber permissions');
   }
+
+  // --- 4. Grant public access to magic-link auth endpoints ---
+  const publicRole = await strapi.query('plugin::users-permissions.role').findOne({ where: { type: 'public' } });
+  if (publicRole) {
+    await setRolePermissions(strapi, publicRole.id, buildPublicPermissions());
+    strapi.log.info('Applied public permissions (magic-link auth)');
+  }
 };
 
 async function setRolePermissions(strapi, roleId, permissions) {
@@ -103,6 +110,18 @@ function buildAdminPermissions() {
         role: read,
       },
     },
+  };
+}
+
+function buildPublicPermissions() {
+  const full = (actions) => {
+    const obj = {};
+    actions.forEach((a) => { obj[a] = { enabled: true }; });
+    return obj;
+  };
+
+  return {
+    'api::magic-link': { controllers: { 'magic-link': full(['requestLink', 'verifyLink']) } },
   };
 }
 

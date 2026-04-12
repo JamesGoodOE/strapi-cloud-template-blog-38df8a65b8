@@ -1,0 +1,176 @@
+'use strict';
+
+const crypto = require('crypto');
+const { createCoreController } = require('@strapi/strapi').factories;
+
+module.exports = createCoreController('api::magic-link.magic-link', ({ strapi }) => ({
+
+  /**
+   * POST /api/magic-links/request-link
+   * Generate a magic link token and email it to the user.
+   */
+  async requestLink(ctx) {
+    const { email } = ctx.request.body || {};
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      // Always return success to prevent email enumeration
+      return ctx.send({ message: 'If an account exists, a sign-in link has been sent.' });
+    }
+
+    const normalisedEmail = email.toLowerCase().trim();
+
+    // Check user exists in Strapi
+    const existingUser = await strapi
+      .query('plugin::users-permissions.user')
+      .findOne({ where: { email: normalisedEmail } });
+
+    if (!existingUser) {
+      // Don't reveal that the user doesn't exist
+      strapi.log.info(`Magic link requested for unknown email: ${normalisedEmail}`);
+      return ctx.send({ message: 'If an account exists, a sign-in link has been sent.' });
+    }
+
+    // Generate secure token
+    const token = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Store token
+    await strapi.documents('api::magic-link.magic-link').create({
+      data: { token, email: normalisedEmail, expiresAt: expiresAt.toISOString(), used: false },
+    });
+
+    // Send email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const link = `${frontendUrl}/verify?token=${token}`;
+
+    try {
+      await sendMagicLinkEmail(normalisedEmail, link);
+      strapi.log.info(`Magic link sent to ${normalisedEmail}`);
+    } catch (err) {
+      strapi.log.error('Failed to send magic link email:', err);
+    }
+
+    return ctx.send({ message: 'If an account exists, a sign-in link has been sent.' });
+  },
+
+  /**
+   * POST /api/magic-links/verify
+   * Verify token and return a Strapi JWT.
+   */
+  async verifyLink(ctx) {
+    const { token } = ctx.request.body || {};
+
+    if (!token) {
+      return ctx.badRequest('Token is required');
+    }
+
+    // Find the magic link record
+    const records = await strapi.documents('api::magic-link.magic-link').findMany({
+      filters: { token: { $eq: token } },
+      limit: 1,
+    });
+
+    const record = records[0];
+
+    if (!record) {
+      return ctx.unauthorized('Invalid or expired link');
+    }
+
+    if (record.used) {
+      return ctx.unauthorized('This link has already been used');
+    }
+
+    if (new Date(record.expiresAt) < new Date()) {
+      return ctx.unauthorized('This link has expired');
+    }
+
+    // Mark as used
+    await strapi.documents('api::magic-link.magic-link').update({
+      documentId: record.documentId,
+      data: { used: true },
+    });
+
+    // Find the user
+    const user = await strapi
+      .query('plugin::users-permissions.user')
+      .findOne({
+        where: { email: record.email },
+        populate: ['role'],
+      });
+
+    if (!user) {
+      return ctx.unauthorized('User not found');
+    }
+
+    // Issue Strapi JWT
+    const jwt = strapi.plugin('users-permissions').service('jwt').issue({
+      id: user.id,
+    });
+
+    return ctx.send({ jwt, user: { id: user.id, email: user.email } });
+  },
+}));
+
+/**
+ * Send magic link email via SMTP (nodemailer).
+ * Falls back to console logging in dev mode.
+ */
+async function sendMagicLinkEmail(email, link) {
+  const host = process.env.SMTP_HOST;
+
+  if (!host) {
+    // Dev mode — log the link to console
+    console.log('');
+    console.log('==================================================');
+    console.log('  MAGIC LINK (dev mode - no SMTP configured)');
+    console.log('--------------------------------------------------');
+    console.log(`  Email: ${email}`);
+    console.log(`  Link:  ${link}`);
+    console.log('==================================================');
+    console.log('');
+    return;
+  }
+
+  const nodemailer = require('nodemailer');
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_PORT === '465',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || 'noreply@oxfordeconomics.com',
+    to: email,
+    subject: 'My Oxford — Your sign-in link',
+    html: `
+      <div style="font-family: 'Poppins', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+        <div style="background: #1d2e52; padding: 24px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;">Oxford Economics</h1>
+          <p style="color: #8ba3cc; margin: 4px 0 0; font-size: 13px;">My Oxford</p>
+        </div>
+        <div style="border: 1px solid #dce2eb; border-top: none; border-radius: 0 0 8px 8px; padding: 32px;">
+          <p style="color: #1e2533; font-size: 15px; line-height: 1.6;">
+            Click the button below to sign in to My Oxford. This link expires in <strong>15 minutes</strong>.
+          </p>
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="${link}"
+               style="background: #2a5fa5; color: #ffffff; padding: 12px 32px; border-radius: 6px;
+                      text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+              Sign In
+            </a>
+          </div>
+          <p style="color: #5a6577; font-size: 12px; line-height: 1.5;">
+            If you didn't request this link, you can safely ignore this email.<br/>
+            Link: <a href="${link}" style="color: #2a5fa5; word-break: break-all;">${link}</a>
+          </p>
+        </div>
+      </div>
+    `,
+    text: `Sign in to My Oxford:\n\n${link}\n\nThis link expires in 15 minutes. If you didn't request this, ignore this email.`,
+  });
+}

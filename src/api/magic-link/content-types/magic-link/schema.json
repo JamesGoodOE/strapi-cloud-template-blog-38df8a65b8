@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "magic_links",
+  "info": {
+    "singularName": "magic-link",
+    "pluralName": "magic-links",
+    "displayName": "Magic Link"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "token": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "expiresAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "used": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
