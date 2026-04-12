@@ -3,7 +3,6 @@
 const crypto = require('crypto');
 
 // In-memory token store — tokens expire after 15 minutes, fine for a prototype.
-// Cleared on server restart, which is acceptable since tokens are short-lived.
 const tokens = new Map();
 
 // Clean expired tokens every 5 minutes
@@ -27,7 +26,6 @@ module.exports = {
 
     const normalisedEmail = email.toLowerCase().trim();
 
-    // Check user exists in Strapi
     const existingUser = await strapi
       .query('plugin::users-permissions.user')
       .findOne({ where: { email: normalisedEmail } });
@@ -37,13 +35,9 @@ module.exports = {
       return ctx.send({ message: 'If an account exists, a sign-in link has been sent.' });
     }
 
-    // Generate secure token
     const token = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
-    const expiresAt = Date.now() + 15 * 60 * 1000;
+    tokens.set(token, { email: normalisedEmail, expiresAt: Date.now() + 15 * 60 * 1000, used: false });
 
-    tokens.set(token, { email: normalisedEmail, expiresAt, used: false });
-
-    // Send email
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const link = `${frontendUrl}/verify?token=${token}`;
 
@@ -82,10 +76,8 @@ module.exports = {
       return ctx.unauthorized('This link has expired');
     }
 
-    // Mark as used
     record.used = true;
 
-    // Find the user
     const user = await strapi
       .query('plugin::users-permissions.user')
       .findOne({
@@ -97,7 +89,6 @@ module.exports = {
       return ctx.unauthorized('User not found');
     }
 
-    // Issue Strapi JWT
     const jwt = strapi.plugin('users-permissions').service('jwt').issue({
       id: user.id,
     });
@@ -106,10 +97,6 @@ module.exports = {
   },
 };
 
-/**
- * Send magic link email via SMTP (nodemailer).
- * Falls back to console logging in dev mode.
- */
 async function sendMagicLinkEmail(email, link) {
   const host = process.env.SMTP_HOST;
 
