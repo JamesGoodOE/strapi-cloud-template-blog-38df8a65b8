@@ -48,8 +48,16 @@ module.exports = async ({ strapi }) => {
     strapi.log.info('Applied oe_subscriber permissions');
   }
 
-  // --- 4. Magic link permissions need to be set via Strapi admin UI ---
-  // Go to Settings > Roles > Public > Report, enable requestMagicLink and verifyMagicLink
+  // --- 4. Grant public access to magic-link auth endpoints ---
+  const publicRole = await strapi.query('plugin::users-permissions.role').findOne({ where: { type: 'public' } });
+  if (publicRole) {
+    try {
+      await setRolePermissions(strapi, publicRole.id, buildPublicPermissions());
+      strapi.log.info('Applied public permissions (magic-link auth)');
+    } catch (err) {
+      strapi.log.error('Failed to set public permissions (non-fatal):', err.message);
+    }
+  }
 };
 
 async function setRolePermissions(strapi, roleId, permissions) {
@@ -117,7 +125,7 @@ function buildPublicPermissions() {
   };
 
   return {
-    'api::report': { controllers: { report: { requestMagicLink: { enabled: true }, verifyMagicLink: { enabled: true } } } },
+    'api::report': { controllers: { report: { requestMagicLink: { enabled: true, policy: '' }, verifyMagicLink: { enabled: true, policy: '' } } } },
   };
 }
 
