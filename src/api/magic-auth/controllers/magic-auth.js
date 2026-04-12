@@ -1,19 +1,27 @@
 'use strict';
 
 const crypto = require('crypto');
-const { createCoreController } = require('@strapi/strapi').factories;
 
-module.exports = createCoreController('api::magic-link.magic-link', ({ strapi }) => ({
+// In-memory token store — tokens expire after 15 minutes, fine for a prototype.
+// Cleared on server restart, which is acceptable since tokens are short-lived.
+const tokens = new Map();
 
+// Clean expired tokens every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of tokens) {
+    if (val.expiresAt < now) tokens.delete(key);
+  }
+}, 5 * 60 * 1000);
+
+module.exports = {
   /**
-   * POST /api/magic-links/request-link
-   * Generate a magic link token and email it to the user.
+   * POST /api/magic-auth/request-link
    */
   async requestLink(ctx) {
     const { email } = ctx.request.body || {};
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      // Always return success to prevent email enumeration
       return ctx.send({ message: 'If an account exists, a sign-in link has been sent.' });
     }
 
@@ -25,19 +33,15 @@ module.exports = createCoreController('api::magic-link.magic-link', ({ strapi })
       .findOne({ where: { email: normalisedEmail } });
 
     if (!existingUser) {
-      // Don't reveal that the user doesn't exist
       strapi.log.info(`Magic link requested for unknown email: ${normalisedEmail}`);
       return ctx.send({ message: 'If an account exists, a sign-in link has been sent.' });
     }
 
     // Generate secure token
     const token = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiresAt = Date.now() + 15 * 60 * 1000;
 
-    // Store token
-    await strapi.documents('api::magic-link.magic-link').create({
-      data: { token, email: normalisedEmail, expiresAt: expiresAt.toISOString(), used: false },
-    });
+    tokens.set(token, { email: normalisedEmail, expiresAt, used: false });
 
     // Send email
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -54,8 +58,7 @@ module.exports = createCoreController('api::magic-link.magic-link', ({ strapi })
   },
 
   /**
-   * POST /api/magic-links/verify
-   * Verify token and return a Strapi JWT.
+   * POST /api/magic-auth/verify
    */
   async verifyLink(ctx) {
     const { token } = ctx.request.body || {};
@@ -64,13 +67,7 @@ module.exports = createCoreController('api::magic-link.magic-link', ({ strapi })
       return ctx.badRequest('Token is required');
     }
 
-    // Find the magic link record
-    const records = await strapi.documents('api::magic-link.magic-link').findMany({
-      filters: { token: { $eq: token } },
-      limit: 1,
-    });
-
-    const record = records[0];
+    const record = tokens.get(token);
 
     if (!record) {
       return ctx.unauthorized('Invalid or expired link');
@@ -80,15 +77,13 @@ module.exports = createCoreController('api::magic-link.magic-link', ({ strapi })
       return ctx.unauthorized('This link has already been used');
     }
 
-    if (new Date(record.expiresAt) < new Date()) {
+    if (record.expiresAt < Date.now()) {
+      tokens.delete(token);
       return ctx.unauthorized('This link has expired');
     }
 
     // Mark as used
-    await strapi.documents('api::magic-link.magic-link').update({
-      documentId: record.documentId,
-      data: { used: true },
-    });
+    record.used = true;
 
     // Find the user
     const user = await strapi
@@ -109,7 +104,7 @@ module.exports = createCoreController('api::magic-link.magic-link', ({ strapi })
 
     return ctx.send({ jwt, user: { id: user.id, email: user.email } });
   },
-}));
+};
 
 /**
  * Send magic link email via SMTP (nodemailer).
@@ -119,7 +114,6 @@ async function sendMagicLinkEmail(email, link) {
   const host = process.env.SMTP_HOST;
 
   if (!host) {
-    // Dev mode — log the link to console
     console.log('');
     console.log('==================================================');
     console.log('  MAGIC LINK (dev mode - no SMTP configured)');

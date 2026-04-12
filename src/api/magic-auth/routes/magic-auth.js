@@ -4,8 +4,8 @@ module.exports = {
   routes: [
     {
       method: 'POST',
-      path: '/magic-links/request-link',
-      handler: 'magic-link.requestLink',
+      path: '/magic-auth/request-link',
+      handler: 'magic-auth.requestLink',
       config: {
         policies: [],
         middlewares: [],
@@ -13,8 +13,8 @@ module.exports = {
     },
     {
       method: 'POST',
-      path: '/magic-links/verify',
-      handler: 'magic-link.verifyLink',
+      path: '/magic-auth/verify',
+      handler: 'magic-auth.verifyLink',
       config: {
         policies: [],
         middlewares: [],

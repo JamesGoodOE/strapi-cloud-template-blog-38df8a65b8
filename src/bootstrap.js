@@ -121,7 +121,7 @@ function buildPublicPermissions() {
   };
 
   return {
-    'api::magic-link': { controllers: { 'magic-link': full(['requestLink', 'verifyLink']) } },
+    'api::magic-auth': { controllers: { 'magic-auth': full(['requestLink', 'verifyLink']) } },
   };
 }
 
