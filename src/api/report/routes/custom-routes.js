@@ -13,7 +13,7 @@ module.exports = {
     },
     {
       method: 'POST',
-      path: '/magic-auth/request-link',
+      path: '/reports/magic-auth/request-link',
       handler: 'magic-auth.requestLink',
       config: {
         policies: [],
@@ -22,7 +22,7 @@ module.exports = {
     },
     {
       method: 'POST',
-      path: '/magic-auth/verify',
+      path: '/reports/magic-auth/verify',
       handler: 'magic-auth.verifyLink',
       config: {
         policies: [],
