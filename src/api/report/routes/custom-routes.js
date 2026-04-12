@@ -16,8 +16,7 @@ module.exports = {
       path: '/reports/auth/request-magic-link',
       handler: 'report.requestMagicLink',
       config: {
-        policies: [],
-        middlewares: [],
+        auth: false,
       },
     },
     {
@@ -25,8 +24,7 @@ module.exports = {
       path: '/reports/auth/verify-magic-link',
       handler: 'report.verifyMagicLink',
       config: {
-        policies: [],
-        middlewares: [],
+        auth: false,
       },
     },
   ],
