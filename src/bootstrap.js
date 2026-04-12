@@ -120,9 +120,7 @@ function buildPublicPermissions() {
     return obj;
   };
 
-  return {
-    'api::report': { controllers: { report: full(['requestMagicLink', 'verifyMagicLink']) } },
-  };
+  return {};
 }
 
 function buildSubscriberPermissions() {
