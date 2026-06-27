@@ -1,6 +1,6 @@
 import { getAccessToken } from "./auth";
 import { mockAnswerFor } from "./mockData";
-import { AskOeAnswer, AskOeProvider, AskOptions, AnswerKind } from "./types";
+import { AskOeAnswer, AskOeProvider, AskOptions, AnswerKind, Lens } from "./types";
 
 /**
  * AskOE client.
@@ -21,22 +21,23 @@ const BUILD_PROVIDER = (process.env.ASKOE_PROVIDER as "mock" | "http") || "mock"
 const MOCK_LATENCY = 750;
 
 class MockProvider implements AskOeProvider {
-  async ask({ question, signal }: AskOptions): Promise<AskOeAnswer> {
+  async ask({ question, lens, signal }: AskOptions): Promise<AskOeAnswer> {
     await delay(MOCK_LATENCY, signal);
-    return mockAnswerFor(question);
+    return mockAnswerFor(question, lens ?? "analyst");
   }
 }
 
 class HttpProvider implements AskOeProvider {
   constructor(private readonly baseUrl: string) {}
 
-  async ask({ question, conversationId, signal }: AskOptions): Promise<AskOeAnswer> {
+  async ask({ question, conversationId, lens, signal }: AskOptions): Promise<AskOeAnswer> {
     if (!this.baseUrl) {
       throw new AskOeError(
         "AskOE API base URL is not configured. Set ASKOE_API_BASE at build time, or switch to the mock provider."
       );
     }
 
+    const effectiveLens: Lens = lens ?? "analyst";
     const token = await getAccessToken();
     const res = await fetch(`${this.baseUrl.replace(/\/$/, "")}/ask`, {
       method: "POST",
@@ -44,7 +45,7 @@ class HttpProvider implements AskOeProvider {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ question, conversationId }),
+      body: JSON.stringify({ question, conversationId, lens: effectiveLens }),
       signal,
     });
 
@@ -54,7 +55,7 @@ class HttpProvider implements AskOeProvider {
     }
 
     const raw = (await res.json()) as Partial<AskOeAnswer> & Record<string, unknown>;
-    return normalizeAnswer(raw, question, conversationId);
+    return normalizeAnswer(raw, question, conversationId, effectiveLens);
   }
 }
 
@@ -75,7 +76,8 @@ export class AskOeError extends Error {
 function normalizeAnswer(
   raw: Partial<AskOeAnswer> & Record<string, unknown>,
   question: string,
-  conversationId?: string
+  conversationId?: string,
+  lens: Lens = "analyst"
 ): AskOeAnswer {
   const citations = Array.isArray(raw.citations) ? raw.citations : [];
   const data = raw.data && Array.isArray(raw.data.series) ? raw.data : undefined;
@@ -93,6 +95,7 @@ function normalizeAnswer(
     question: raw.question || question,
     answer: raw.answer || "",
     kind,
+    lens: (raw.lens as Lens) || lens,
     citations,
     data,
   };

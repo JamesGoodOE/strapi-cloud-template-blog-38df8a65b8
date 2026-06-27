@@ -11,6 +11,13 @@
  */
 export type AnswerKind = "report" | "data" | "mixed";
 
+/**
+ * The "lens" through which AskOE frames an answer:
+ *   - "analyst"   -> the default, fuller analytical response.
+ *   - "executive" -> a concise, bottom-line-up-front summary for senior readers.
+ */
+export type Lens = "analyst" | "executive";
+
 /** A single Oxford Economics research report referenced by an answer. */
 export interface ReportCitation {
   id: string;
@@ -68,6 +75,8 @@ export interface AskOeAnswer {
   /** Markdown/plain-text answer body. */
   answer: string;
   kind: AnswerKind;
+  /** The lens this answer was framed for. */
+  lens: Lens;
   /** Research citations (present for "report" and "mixed"). */
   citations: ReportCitation[];
   /** Economic data (present for "data" and "mixed"). */
@@ -77,6 +86,8 @@ export interface AskOeAnswer {
 export interface AskOptions {
   question: string;
   conversationId?: string;
+  /** Framing for the answer; defaults to "analyst". */
+  lens?: Lens;
   signal?: AbortSignal;
 }
 

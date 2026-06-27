@@ -16,9 +16,20 @@ import { EmptyState } from "./EmptyState";
 import { AnswerTurn } from "./AnswerTurn";
 import { QuestionInput } from "./QuestionInput";
 import { LibraryView } from "./LibraryView";
+import { LensToggle } from "./LensToggle";
 import { useLibrary } from "../LibraryContext";
 import { ask, AskOeError } from "../../services/askoe";
-import { AskOeAnswer } from "../../services/types";
+import { AskOeAnswer, Lens } from "../../services/types";
+
+const LENS_KEY = "askoe.lens";
+
+function initialLens(): Lens {
+  try {
+    return window.localStorage.getItem(LENS_KEY) === "executive" ? "executive" : "analyst";
+  } catch {
+    return "analyst";
+  }
+}
 
 const useStyles = makeStyles({
   app: {
@@ -27,10 +38,15 @@ const useStyles = makeStyles({
     height: "100vh",
     backgroundColor: tokens.colorNeutralBackground2,
   },
-  tabs: {
+  tabBar: {
+    display: "flex",
+    alignItems: "center",
     backgroundColor: tokens.colorNeutralBackground1,
     paddingInline: "8px",
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+  tabs: {
+    flex: 1,
   },
   scroll: {
     flex: 1,
@@ -61,6 +77,7 @@ export const App: React.FC = () => {
   const styles = useStyles();
   const { charts } = useLibrary();
   const [tab, setTab] = React.useState<TabValue>("ask");
+  const [lens, setLens] = React.useState<Lens>(initialLens);
   const [turns, setTurns] = React.useState<AskOeAnswer[]>([]);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -74,6 +91,15 @@ export const App: React.FC = () => {
     }
   }, [turns, busy, tab]);
 
+  const changeLens = (next: Lens) => {
+    setLens(next);
+    try {
+      window.localStorage.setItem(LENS_KEY, next);
+    } catch {
+      /* localStorage unavailable */
+    }
+  };
+
   const handleSubmit = async (question: string) => {
     setTab("ask");
     setBusy(true);
@@ -81,7 +107,7 @@ export const App: React.FC = () => {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const answer = await ask({ question, conversationId, signal: controller.signal });
+      const answer = await ask({ question, conversationId, lens, signal: controller.signal });
       setTurns((prev) => [...prev, answer]);
       setConversationId(answer.conversationId);
     } catch (err) {
@@ -106,22 +132,27 @@ export const App: React.FC = () => {
     <div className={styles.app}>
       <Header />
 
-      <TabList
-        className={styles.tabs}
-        selectedValue={tab}
-        onTabSelect={(_, d) => setTab(d.value as TabValue)}
-        size="small"
-      >
-        <Tab value="ask" icon={<ChatSparkleRegular />}>
-          Ask
-        </Tab>
-        <Tab value="library">
-          <span className={styles.tabLabel}>
-            <LibraryRegular /> Library
-            {charts.length > 0 && <CounterBadge count={charts.length} size="small" appearance="filled" color="brand" />}
-          </span>
-        </Tab>
-      </TabList>
+      <div className={styles.tabBar}>
+        <TabList
+          className={styles.tabs}
+          selectedValue={tab}
+          onTabSelect={(_, d) => setTab(d.value as TabValue)}
+          size="small"
+        >
+          <Tab value="ask" icon={<ChatSparkleRegular />}>
+            Ask
+          </Tab>
+          <Tab value="library">
+            <span className={styles.tabLabel}>
+              <LibraryRegular /> Library
+              {charts.length > 0 && (
+                <CounterBadge count={charts.length} size="small" appearance="filled" color="brand" />
+              )}
+            </span>
+          </Tab>
+        </TabList>
+        <LensToggle lens={lens} onChange={changeLens} />
+      </div>
 
       {tab === "ask" ? (
         <>

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Badge, makeStyles, tokens } from "@fluentui/react-components";
+import { PersonStarRegular } from "@fluentui/react-icons";
 import { AskOeAnswer } from "../../services/types";
 import { CitationCard } from "./CitationCard";
 import { DataAnswerCard } from "./DataAnswerCard";
@@ -34,6 +35,8 @@ const useStyles = makeStyles({
     lineHeight: tokens.lineHeightBase400,
     color: tokens.colorNeutralForeground1,
     margin: 0,
+    // Executive answers use line breaks for their bottom-line + bullets.
+    whiteSpace: "pre-line",
   },
   sectionLabel: {
     fontSize: tokens.fontSizeBase200,
@@ -82,6 +85,11 @@ export const AnswerTurn: React.FC<AnswerTurnProps> = ({ answer }) => {
           <Badge appearance="tint" color={badge.color}>
             {badge.text}
           </Badge>
+          {answer.lens === "executive" && (
+            <Badge appearance="tint" color="important" icon={<PersonStarRegular />}>
+              Executive
+            </Badge>
+          )}
         </div>
 
         {answer.answer && <p className={styles.answerText}>{answer.answer}</p>}

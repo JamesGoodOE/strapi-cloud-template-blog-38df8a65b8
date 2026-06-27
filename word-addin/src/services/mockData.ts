@@ -1,4 +1,4 @@
-import { AskOeAnswer } from "./types";
+import { AskOeAnswer, Lens } from "./types";
 
 /**
  * Deterministic sample responses used by the mock provider so the add-in is
@@ -30,16 +30,22 @@ function annualSeries(startYear: number, points: number[]): { date: string; valu
   return points.map((value, i) => ({ date: `${startYear + i}-01-01`, value }));
 }
 
-const REPORT_ANSWER = (question: string): AskOeAnswer => ({
+const REPORT_ANSWER = (question: string, lens: Lens): AskOeAnswer => ({
   conversationId: "demo",
   id: nextId("ans"),
   question,
   kind: "report",
+  lens,
   answer:
-    "Oxford Economics expects global growth to remain subdued in 2026, with GDP " +
-    "expanding around 2.6%. Tighter financial conditions and softer trade are the " +
-    "principal drags, partially offset by resilient services demand and easing inflation " +
-    "across advanced economies.",
+    lens === "executive"
+      ? "Bottom line: global growth stays subdued at ~2.6% in 2026.\n" +
+        "• Tighter financial conditions and softer trade are the principal drags.\n" +
+        "• Resilient services demand and easing inflation limit the downside.\n" +
+        "• Watch: the pace of disinflation, which is slower than in past cycles."
+      : "Oxford Economics expects global growth to remain subdued in 2026, with GDP " +
+        "expanding around 2.6%. Tighter financial conditions and softer trade are the " +
+        "principal drags, partially offset by resilient services demand and easing inflation " +
+        "across advanced economies.",
   citations: [
     {
       id: nextId("cite"),
@@ -67,14 +73,19 @@ const REPORT_ANSWER = (question: string): AskOeAnswer => ({
   ],
 });
 
-const DATA_ANSWER = (question: string): AskOeAnswer => ({
+const DATA_ANSWER = (question: string, lens: Lens): AskOeAnswer => ({
   conversationId: "demo",
   id: nextId("ans"),
   question,
   kind: "data",
+  lens,
   answer:
-    "US real GDP growth slows from 2.5% in 2024 to 1.8% in 2026 before recovering toward 2.1% by 2028, " +
-    "as the lagged effects of monetary tightening fade and investment stabilises.",
+    lens === "executive"
+      ? "Bottom line: US growth troughs at 1.8% in 2026, then recovers to ~2.1% by 2028.\n" +
+        "• The soft patch reflects lagged monetary tightening.\n" +
+        "• Investment stabilising drives the rebound."
+      : "US real GDP growth slows from 2.5% in 2024 to 1.8% in 2026 before recovering toward 2.1% by 2028, " +
+        "as the lagged effects of monetary tightening fade and investment stabilises.",
   citations: [
     {
       id: nextId("cite"),
@@ -101,15 +112,20 @@ const DATA_ANSWER = (question: string): AskOeAnswer => ({
   },
 });
 
-const MIXED_ANSWER = (question: string): AskOeAnswer => ({
+const MIXED_ANSWER = (question: string, lens: Lens): AskOeAnswer => ({
   conversationId: "demo",
   id: nextId("ans"),
   question,
   kind: "mixed",
+  lens,
   answer:
-    "Eurozone inflation is set to ease towards the ECB's 2% target through 2026. Headline HICP " +
-    "falls from 2.8% to 2.1% over the year, and Oxford Economics research notes the disinflation " +
-    "is increasingly broad-based across goods and services.",
+    lens === "executive"
+      ? "Bottom line: Eurozone inflation returns to the ECB's 2% target by end-2026.\n" +
+        "• Headline HICP eases from 2.8% to 2.1% over the year.\n" +
+        "• Disinflation is now broad-based across goods and services."
+      : "Eurozone inflation is set to ease towards the ECB's 2% target through 2026. Headline HICP " +
+        "falls from 2.8% to 2.1% over the year, and Oxford Economics research notes the disinflation " +
+        "is increasingly broad-based across goods and services.",
   citations: [
     {
       id: nextId("cite"),
@@ -144,7 +160,7 @@ const MIXED_ANSWER = (question: string): AskOeAnswer => ({
  * responsive: data-ish questions return a chartable series, report-ish
  * questions return citations, and ambiguous ones return a mixed answer.
  */
-export function mockAnswerFor(question: string): AskOeAnswer {
+export function mockAnswerFor(question: string, lens: Lens = "analyst"): AskOeAnswer {
   const q = question.toLowerCase();
   const dataHints = ["gdp", "forecast", "growth", "rate", "chart", "data", "series", "trend", "%", "number"];
   const reportHints = ["report", "outlook", "view", "expect", "research", "why", "risk", "analysis", "say"];
@@ -152,14 +168,14 @@ export function mockAnswerFor(question: string): AskOeAnswer {
   const dataScore = dataHints.filter((h) => q.includes(h)).length;
   const reportScore = reportHints.filter((h) => q.includes(h)).length;
 
-  if (dataScore > 0 && reportScore > 0) return MIXED_ANSWER(question);
-  if (dataScore > reportScore) return DATA_ANSWER(question);
-  if (reportScore > dataScore) return REPORT_ANSWER(question);
+  if (dataScore > 0 && reportScore > 0) return MIXED_ANSWER(question, lens);
+  if (dataScore > reportScore) return DATA_ANSWER(question, lens);
+  if (reportScore > dataScore) return REPORT_ANSWER(question, lens);
   // Default rotates so the demo shows variety.
   const pick = counter % 3;
-  if (pick === 0) return DATA_ANSWER(question);
-  if (pick === 1) return REPORT_ANSWER(question);
-  return MIXED_ANSWER(question);
+  if (pick === 0) return DATA_ANSWER(question, lens);
+  if (pick === 1) return REPORT_ANSWER(question, lens);
+  return MIXED_ANSWER(question, lens);
 }
 
 export const SUGGESTED_PROMPTS: string[] = [
