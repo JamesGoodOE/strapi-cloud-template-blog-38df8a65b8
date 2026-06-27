@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+# Local environment overrides
+.env
+.env.local
+# office-addin-dev-certs output
+certs/
