@@ -1,0 +1,95 @@
+============================================================
+  AskOE for Word  —  portable test build (no install, no admin)
+============================================================
+
+This folder runs the Oxford Economics "AskOE for Word" add-in on your
+PC with NO installation and NO administrator rights.
+
+What's in here:
+  - AskOE-AddIn.exe        The portable host (Node + the add-in, in one file).
+  - manifest.xml           The file you point Word at to load the add-in.
+  - AskOE-localhost.crt     A certificate so Windows trusts https://localhost.
+  - Trust-Certificate.ps1  Optional helper to trust the certificate (no admin).
+
+It runs in DEMO MODE (sample Oxford Economics answers) — no login or
+API key is needed to test it.
+
+------------------------------------------------------------
+  ONE-TIME SETUP
+------------------------------------------------------------
+
+STEP 1 — Trust the localhost certificate (needed once; NOT admin)
+
+  Office loads the add-in over https://localhost, so Windows must trust
+  the bundled certificate. Either:
+
+    A) Double-click  AskOE-localhost.crt  ->  "Install Certificate..."
+       ->  Store location: "Current User"  ->  Next
+       ->  "Place all certificates in the following store"  ->  Browse
+       ->  "Trusted Root Certification Authorities"  ->  OK  ->  Next
+       ->  Finish.  Click "Yes" on the security notice.
+
+    -- OR --
+
+    B) Right-click  Trust-Certificate.ps1  ->  "Run with PowerShell".
+
+  (Both options install to YOUR user account only — no admin prompt.)
+
+------------------------------------------------------------
+  EVERY TIME YOU WANT TO TEST
+------------------------------------------------------------
+
+STEP 2 — Start the host
+
+  Double-click  AskOE-AddIn.exe.
+  A console window opens and says it is serving https://localhost:3000.
+  LEAVE THIS WINDOW OPEN while you use the add-in.
+  (If Windows SmartScreen warns about an unknown publisher, click
+   "More info" -> "Run anyway". The file is unsigned, not installed.)
+
+STEP 3 — Load the add-in in Word
+
+  Open Word (a blank document is fine), then:
+    Insert tab  ->  Add-ins  ->  "My Add-ins"  ->  "Upload My Add-in"
+    ->  browse to  manifest.xml  in this folder  ->  Upload.
+
+  If you don't see "Upload My Add-in", use Word for the web
+  (word.new) which always shows it, or see TROUBLESHOOTING below.
+
+STEP 4 — Use it
+
+  On the Home ribbon you'll see an "Oxford Economics" group with an
+  "Ask AskOE" button. Click it to open the pane, then ask a question,
+  e.g. "What is the US GDP growth forecast through 2028?"
+    - Report answers  -> insert a quotation with an OE citation.
+    - Data answers     -> pick a chart type and insert the chart.
+    - Save any chart to the built-in Library to reuse later.
+
+To stop: close the console window.
+
+------------------------------------------------------------
+  TROUBLESHOOTING
+------------------------------------------------------------
+
+* "This site is not secure" / the pane is blank:
+    The certificate isn't trusted yet. Redo STEP 1, then restart the .exe
+    and reload the add-in.
+
+* No "Upload My Add-in" button in desktop Word:
+    Some managed installs hide it. Two options, neither needs admin:
+    - Use Word on the web (word.new): Add-ins -> Upload My Add-in.
+    - Or set up a shared-folder catalog: File -> Options -> Trust Center
+      -> Trust Center Settings -> Trusted Add-in Catalogs, add this
+      folder's network path, tick "Show in Menu", restart Word, then
+      Insert -> My Add-ins -> Shared Folder.
+
+* "Port 3000 is already in use":
+    Something else uses that port. Open a Command Prompt here and run:
+        set PORT=3001 & AskOE-AddIn.exe
+    then edit manifest.xml and replace 3000 with 3001 (it appears a few
+    times), save, and re-upload it in Word.
+
+* Connecting to the REAL AskOE API instead of demo data:
+    This portable build is fixed to demo mode. The full project (with
+    instructions to point it at the live API and deploy via Microsoft 365)
+    is on the git branch  claude/word-addin-oxford-economics-wetugu.

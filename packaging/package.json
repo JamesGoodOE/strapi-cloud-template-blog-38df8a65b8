@@ -1,0 +1,18 @@
+{
+  "name": "askoe-addin-host",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portable single-file host for the AskOE for Word add-in.",
+  "bin": "server.js",
+  "scripts": {
+    "build:exe": "pkg . --targets node18-win-x64 --output build/AskOE-AddIn.exe --compress GZip"
+  },
+  "pkg": {
+    "assets": ["dist/**/*", "certs/**/*"],
+    "targets": ["node18-win-x64"],
+    "outputPath": "build"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^5.16.1"
+  }
+}
